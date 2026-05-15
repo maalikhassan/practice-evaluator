@@ -43,10 +43,21 @@ const CARDS: {
   },
 ];
 
+const PRACTICE_PROMPTS = [
+  "Pitch your idea in 60 seconds",
+  "Explain your project to a non-technical friend",
+  "Answer: Why should we hire you?",
+] as const;
+
 function formatTime(totalSeconds: number): string {
   const mins = Math.floor(totalSeconds / 60);
   const secs = totalSeconds % 60;
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
+function parseScore(text: string): number | null {
+  const m = text.match(/(\d+(?:\.\d+)?)\s*(?:\/\s*10|out of 10)/i);
+  return m ? Math.min(10, Math.max(0, Number(m[1]))) : null;
 }
 
 function MicIcon({ className }: { className?: string }) {
@@ -138,6 +149,15 @@ export default function Home() {
   });
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
+
+  const chipsDisabled = isRecording || isAnalyzing;
+  const evaluatorScore =
+    results?.evaluator != null ? parseScore(results.evaluator) : null;
+
+  const togglePrompt = (prompt: string) => {
+    setSelectedPrompt((prev) => (prev === prompt ? null : prompt));
+  };
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -402,43 +422,63 @@ export default function Home() {
       );
     }
 
-    if (state === "playing") {
+    const feedbackText =
+      results && (state === "ready" || state === "playing" || state === "ended")
+        ? results[card.resultKey]
+        : null;
+
+    if (state === "playing" && feedbackText) {
       return (
-        <div className="flex flex-col items-center justify-center gap-5 py-10 transition-all duration-300">
-          <SoundWave />
-          <p className="text-sm font-medium text-violet-300">Speaking...</p>
+        <div className="flex w-full flex-col gap-4 py-6 transition-all duration-300">
+          <p className="max-h-32 overflow-y-auto text-left text-sm leading-relaxed text-zinc-300">
+            {feedbackText}
+          </p>
+          <div className="flex flex-col items-center justify-center gap-3">
+            <SoundWave />
+            <p className="text-sm font-medium text-violet-300">Speaking...</p>
+          </div>
         </div>
       );
     }
 
-    if (state === "ended") {
+    if (state === "ended" && feedbackText) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 py-8 transition-all duration-300">
-          <button
-            type="button"
-            onClick={() => playFeedback(card.id)}
-            className="group flex h-16 w-16 items-center justify-center rounded-full border border-zinc-600 bg-zinc-800 text-zinc-300 transition-all duration-300 hover:border-violet-500/50 hover:bg-zinc-700 hover:text-violet-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
-            aria-label={`Replay ${card.label} feedback`}
-          >
-            <ReplayIcon className="h-7 w-7 transition-transform duration-300 group-hover:rotate-[-30deg]" />
-          </button>
-          <p className="text-xs text-zinc-500">Tap to replay</p>
+        <div className="flex w-full flex-col gap-4 py-6 transition-all duration-300">
+          <p className="max-h-32 overflow-y-auto text-left text-sm leading-relaxed text-zinc-300">
+            {feedbackText}
+          </p>
+          <div className="flex flex-col items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => playFeedback(card.id)}
+              className="group flex h-16 w-16 items-center justify-center rounded-full border border-zinc-600 bg-zinc-800 text-zinc-300 transition-all duration-300 hover:border-violet-500/50 hover:bg-zinc-700 hover:text-violet-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              aria-label={`Replay ${card.label} feedback`}
+            >
+              <ReplayIcon className="h-7 w-7 transition-transform duration-300 group-hover:rotate-[-30deg]" />
+            </button>
+            <p className="text-xs text-zinc-500">Tap to replay</p>
+          </div>
         </div>
       );
     }
 
-    if (state === "ready" && results) {
+    if (state === "ready" && feedbackText) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 py-8 transition-all duration-300">
-          <button
-            type="button"
-            onClick={() => playFeedback(card.id)}
-            className="play-pulse group flex h-20 w-20 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/30 transition-all duration-300 hover:scale-105 hover:bg-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-            aria-label={`Play ${card.label} feedback`}
-          >
-            <PlayIcon className="ml-1 h-9 w-9" />
-          </button>
-          <p className="text-sm text-zinc-400">Click to hear feedback</p>
+        <div className="flex w-full flex-col gap-4 py-6 transition-all duration-300">
+          <p className="max-h-32 overflow-y-auto text-left text-sm leading-relaxed text-zinc-300">
+            {feedbackText}
+          </p>
+          <div className="flex flex-col items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => playFeedback(card.id)}
+              className="play-pulse group flex h-20 w-20 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/30 transition-all duration-300 hover:scale-105 hover:bg-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+              aria-label={`Play ${card.label} feedback`}
+            >
+              <PlayIcon className="ml-1 h-9 w-9" />
+            </button>
+            <p className="text-sm text-zinc-400">Click to hear feedback</p>
+          </div>
         </div>
       );
     }
@@ -476,7 +516,28 @@ export default function Home() {
             </p>
           )}
 
-          <div className="mt-10 flex flex-col items-center gap-5">
+          <div className="mt-8 flex flex-wrap justify-center gap-2 px-2">
+            {PRACTICE_PROMPTS.map((prompt) => {
+              const isSelected = selectedPrompt === prompt;
+              return (
+                <button
+                  key={prompt}
+                  type="button"
+                  disabled={chipsDisabled}
+                  onClick={() => togglePrompt(prompt)}
+                  className={`rounded-full border px-3 py-1.5 text-xs transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm ${
+                    isSelected
+                      ? "border-violet-500/50 bg-violet-950/40 text-violet-200"
+                      : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+                  }`}
+                >
+                  {prompt}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex flex-col items-center gap-5">
             <div className="relative flex items-center justify-center">
               {isRecording && (
                 <>
@@ -513,6 +574,12 @@ export default function Home() {
               )}
             </p>
 
+            {selectedPrompt && !isRecording && !isAnalyzing && (
+              <p className="max-w-md text-center text-sm italic text-zinc-400">
+                Try: {selectedPrompt}
+              </p>
+            )}
+
             {isRecording && (
               <button
                 type="button"
@@ -533,7 +600,7 @@ export default function Home() {
             return (
               <article
                 key={card.id}
-                className={`flex min-h-[280px] flex-col overflow-hidden rounded-2xl border bg-zinc-900/60 shadow-xl backdrop-blur-sm transition-all duration-300 ${
+                className={`flex min-h-[320px] flex-col overflow-hidden rounded-2xl border bg-zinc-900/60 shadow-xl backdrop-blur-sm transition-all duration-300 ${
                   isReady
                     ? "border-violet-500/30 shadow-violet-900/20"
                     : "border-zinc-800"
@@ -555,6 +622,11 @@ export default function Home() {
                     >
                       {card.label}
                     </h2>
+                    {card.id === "evaluator" && evaluatorScore !== null && (
+                      <span className="ml-auto rounded-full bg-violet-600/20 px-2.5 py-0.5 text-xs font-semibold text-violet-300">
+                        {evaluatorScore}/10
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col items-center justify-center px-5">
