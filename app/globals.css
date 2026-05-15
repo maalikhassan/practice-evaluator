@@ -24,3 +24,66 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes result-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-result {
+  animation: result-in 0.55s ease-out forwards;
+}
+
+@keyframes recording-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.recording-ring {
+  animation: recording-pulse 1.8s ease-out infinite;
+}
+
+.recording-ring-delay {
+  animation-delay: 0.6s;
+}
+
+@keyframes sound-bar {
+  0%,
+  100% {
+    height: 0.5rem;
+  }
+  50% {
+    height: 2.5rem;
+  }
+}
+
+.sound-bar {
+  height: 0.5rem;
+  animation: sound-bar 0.7s ease-in-out infinite;
+}
+
+@keyframes play-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(139, 92, 246, 0.55);
+  }
+}
+
+.play-pulse {
+  animation: play-glow 2s ease-in-out infinite;
+}

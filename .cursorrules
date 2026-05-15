@@ -1,0 +1,58 @@
+# Project: Speech Analyzer App (Buildathon Practice)
+
+## Overview
+This is a Next.js 14 App Router application that records a user's voice, 
+transcribes it using ElevenLabs Speech-to-Text API, and then provides 
+AI-powered feedback through 3 different analysis cards.
+
+## Tech Stack
+- Framework: Next.js 14 (App Router, NOT Pages Router)
+- Language: TypeScript
+- Styling: Tailwind CSS
+- Speech-to-Text: ElevenLabs Scribe API
+- AI Feedback: Anthropic Claude API (claude-sonnet-4-20250514)
+- Deployment: Vercel
+
+## Code Rules
+- Always use the App Router (app/ directory), never pages/
+- Use TypeScript for all files
+- Use Tailwind CSS for all styling — no CSS files unless absolutely necessary
+- Keep API keys in .env.local, access them only in server-side API routes
+- API routes go in app/api/ folder
+- Use async/await — no .then() chains
+- Always handle loading states and error states in the UI
+
+## Project Structure
+app/
+  page.tsx          ← Main UI page (the recorder + 3 cards)
+  api/
+    analyze/
+      route.ts      ← Server-side: calls ElevenLabs STT + Claude AI
+
+## ElevenLabs Speech-to-Text
+- Endpoint: POST https://api.elevenlabs.io/v1/speech-to-text
+- Header: xi-api-key: process.env.ELEVENLABS_API_KEY
+- Body: FormData with fields: model_id="scribe_v1" and file=(audio blob)
+- Returns JSON with a "text" field containing the transcript
+
+## Anthropic Claude
+- Use the official @anthropic-ai/sdk package
+- Model: claude-sonnet-4-20250514
+- Call it 3 times in parallel (Promise.all) with different system prompts
+  for the 3 analysis cards
+
+## The 3 Analysis Cards
+1. COUNTER: Count filler words (um, uh, like, you know, basically, literally, 
+   actually, right, okay, so) — give exact counts per word and total
+2. GRAMMARIAN: Analyze grammar, sentence structure, vocabulary richness. 
+   Point out specific errors with corrections.
+3. EVALUATOR: Overall speech quality — clarity, confidence, structure, pacing, 
+   content. Give a score out of 10 and actionable tips.
+
+## UI Requirements
+- Dark theme preferred
+- "Start Speaking" button that turns red when recording
+- Show recording timer while recording
+- Show loading spinners on cards while AI is thinking
+- Cards appear with a nice animation when results arrive
+- Mobile-friendly layout
